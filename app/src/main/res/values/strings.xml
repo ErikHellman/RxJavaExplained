@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">RxJavaExplained</string>
+    <string name="search_hint">Search for people...</string>
+    <string name="title_activity_instant_search_demo">InstantSearchDemo</string>
+    <string name="title_activity_event_bus_demo">EventBusDemo</string>
+</resources>

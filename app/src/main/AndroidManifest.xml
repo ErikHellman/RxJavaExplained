@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest package="se.hellsoft.rxjavaexplained"
+          xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application
+        android:name=".eventbus.MyApp"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+        <activity android:name=".sqlbrite.SqlbriteDemoActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
+        <provider
+            android:name=".sqlbrite.KittenProvider"
+            android:authorities="se.hellsoft.rxjavaexplained.provider"
+            android:enabled="true"
+            android:exported="false">
+        </provider>
+
+        <service
+            android:name=".eventbus.EventBuilderService"
+            android:exported="false">
+        </service>
+
+        <activity
+            android:name=".instantsearch.InstantSearchDemo"
+            android:label="@string/title_activity_instant_search_demo"
+            android:theme="@style/AppTheme.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".eventbus.EventBusDemo"
+            android:label="@string/title_activity_event_bus_demo"
+            android:theme="@style/AppTheme.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>

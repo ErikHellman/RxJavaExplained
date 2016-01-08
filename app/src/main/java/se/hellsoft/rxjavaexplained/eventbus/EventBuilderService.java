@@ -20,41 +20,41 @@ import se.hellsoft.rxjavaexplained.sqlbrite.Kitten;
  * I leave the more advanced (and probably more useful) example to the reader :)
  */
 public class EventBuilderService extends Service {
-    public static final String ACTION_BUILD_KITTEN = BuildConfig.APPLICATION_ID + ".action.BUILD_KITTEN";
-    private static final Random RANDOM = new Random();
+  public static final String ACTION_BUILD_KITTEN = BuildConfig.APPLICATION_ID + ".action.BUILD_KITTEN";
+  private static final Random RANDOM = new Random();
 
-    @Nullable
-    @Override
-    public IBinder onBind(Intent intent) {
-        return null;
-    }
+  @Nullable
+  @Override
+  public IBinder onBind(Intent intent) {
+    return null;
+  }
 
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        ((MyApp) getApplication()).getSubject().onNext(buildEvent());
-        return START_NOT_STICKY;
-    }
+  @Override
+  public int onStartCommand(Intent intent, int flags, int startId) {
+    ((MyApp) getApplication()).getSubject().onNext(buildEvent());
+    return START_NOT_STICKY;
+  }
 
-    private Event buildEvent() {
-        Event event = new Event();
-        switch (RANDOM.nextInt(3)) {
-            case 0:
-                event.type = Event.Type.Kitten;
-                event.name = Kitten.CAT_NAMES[RANDOM.nextInt(Kitten.CAT_NAMES.length)];
-                break;
-            case 1:
-                event.type = Event.Type.Dog;
-                event.name = "Pluto";
-                break;
-            case 2:
-                event.type = Event.Type.Rabbit;
-                event.name = "Dinner";
-                break;
-        }
-        event.description = "This is my animal!";
-        event.timeStamp = System.currentTimeMillis();
-        Toast.makeText(this, "Created new " + event.type.name(), Toast.LENGTH_SHORT).show();
-        Log.d("EventBusDemo", "New event: " + event);
-        return event;
+  private Event buildEvent() {
+    Event event = new Event();
+    switch (RANDOM.nextInt(3)) {
+      case 0:
+        event.type = Event.Type.Kitten;
+        event.name = Kitten.CAT_NAMES[RANDOM.nextInt(Kitten.CAT_NAMES.length)];
+        break;
+      case 1:
+        event.type = Event.Type.Dog;
+        event.name = "Pluto";
+        break;
+      case 2:
+        event.type = Event.Type.Rabbit;
+        event.name = "Dinner";
+        break;
     }
+    event.description = "This is my animal!";
+    event.timeStamp = System.currentTimeMillis();
+    Toast.makeText(this, "Created new " + event.type.name(), Toast.LENGTH_SHORT).show();
+    Log.d("EventBusDemo", "New event: " + event);
+    return event;
+  }
 }

@@ -1,7 +1,5 @@
 package se.hellsoft.rxjavaexplained.instantsearch;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -27,115 +25,134 @@ import butterknife.ButterKnife;
 import rx.Observable;
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 import se.hellsoft.rxjavaexplained.R;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 public class InstantSearchDemo extends AppCompatActivity {
-    private static final String TAG = "InstantSearchDemo";
-    @Bind(R.id.search_input)
-    EditText searchInput;
-    @Bind(R.id.search_result)
-    RecyclerView searchResult;
-    private Subscription searchSubscription;
+  private static final String TAG = "InstantSearchDemo";
+  private static final int MIN_LENGTH = 3;
+  @Bind(R.id.search_input)
+  EditText searchInput;
+  @Bind(R.id.search_result)
+  RecyclerView searchResult;
+  private Subscription searchSubscription;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.instant_search_demo);
-        ButterKnife.bind(this);
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.instant_search_demo);
+    ButterKnife.bind(this);
 
-        SearchResultAdapter adapter = new SearchResultAdapter();
-        searchResult.setLayoutManager(new LinearLayoutManager(this));
-        searchResult.setAdapter(adapter);
-        searchSubscription = RxTextView.afterTextChangeEvents(searchInput)
-                // Convert the event to a String
-                .map(textChangeEvent -> textChangeEvent.editable().toString())
-                        // If we get multiple events within 200ms, just emit the last one
-                .debounce(200, MILLISECONDS)
-                        // "Convert" the query string to a search result
-                .switchMap(this::searchNames)
-                        // Switch back to the main thread
-                .observeOn(AndroidSchedulers.mainThread())
-                        // Set the result on our adapter
-                .subscribe(adapter::setSearchResult);
+    SearchResultAdapter adapter = new SearchResultAdapter();
+    searchResult.setLayoutManager(new LinearLayoutManager(this));
+    searchResult.setAdapter(adapter);
+    searchSubscription = RxTextView.afterTextChangeEvents(searchInput)
+        // Convert the event to a String
+        .map(textChangeEvent -> textChangeEvent.editable().toString())
+        // Filter out queries shorter than 3 characters and clear result in that case.
+        .filter(searchString -> {
+          Log.d(TAG, "Filtering on " + Thread.currentThread().getName());
+          if (searchString.length() < MIN_LENGTH) {
+            adapter.setSearchResult(Collections.emptyList());
+            return false;
+          } else {
+            return true;
+          }
+        })
+        // The things above should be done on the main thread
+        .subscribeOn(AndroidSchedulers.mainThread())
+        // If we get multiple events within 200ms, just emit the last one
+        .debounce(200, MILLISECONDS)
+        // "Convert" the query string to a search result
+        .switchMap(this::searchNames)
+        // The search should happen on the IO thread
+        .subscribeOn(Schedulers.io())
+        // Switch back to the main thread
+        .observeOn(AndroidSchedulers.mainThread())
+        // Set the result on our adapter
+        .subscribe(adapter::setSearchResult);
 
+  }
+
+  @Override
+  protected void onDestroy() {
+    super.onDestroy();
+    if (!searchSubscription.isUnsubscribed()) {
+      searchSubscription.unsubscribe();
     }
+  }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (!searchSubscription.isUnsubscribed()) {
-            searchSubscription.unsubscribe();
-        }
+  private Observable<List<String>> searchNames(String query) {
+    Log.d(TAG, "searchNames: Search for " + query);
+    Log.d(TAG, "Searching on " + Thread.currentThread().getName());
+    if (query == null || query.length() == 0) {
+      return Observable.just(new LinkedList<>());
     }
-
-    private Observable<List<String>> searchNames(String query) {
-        Log.d(TAG, "searchNames: Search for " + query);
-        if (query == null || query.length() == 0) {
-            return Observable.just(new LinkedList<>());
+    BufferedReader reader = null;
+    LinkedList<String> result;
+    try {
+      InputStream inputStream = getResources()
+          .openRawResource(R.raw.unique_random_strings);
+      InputStreamReader inputStreamReader
+          = new InputStreamReader(inputStream);
+      reader = new BufferedReader(inputStreamReader);
+      String line;
+      result = new LinkedList<>();
+      while ((line = reader.readLine()) != null) {
+        if (line.toLowerCase().contains(query.toLowerCase())) {
+          result.add(line);
         }
-        BufferedReader reader = null;
-        LinkedList<String> result;
+      }
+    } catch (IOException e) {
+      return Observable.error(e);
+    } finally {
+      if (reader != null) {
         try {
-            InputStream inputStream = getResources()
-                    .openRawResource(R.raw.unique_random_strings);
-            InputStreamReader inputStreamReader
-                    = new InputStreamReader(inputStream);
-            reader = new BufferedReader(inputStreamReader);
-            String line;
-            result = new LinkedList<>();
-            while ((line = reader.readLine()) != null) {
-                if (line.toLowerCase().contains(query.toLowerCase())) {
-                    result.add(line);
-                }
-            }
+          reader.close();
         } catch (IOException e) {
-            return Observable.error(e);
-        } finally {
-            if (reader != null) {
-                try {
-                    reader.close();
-                } catch (IOException e) {
-                    // Ignore
-                }
-            }
+          // Ignore
         }
-        Collections.sort(result);
-        Log.d(TAG, "searchNames: Found " + result.size() + " hits!");
-        return Observable.just(result);
+      }
+    }
+    Collections.sort(result);
+    Log.d(TAG, "searchNames: Found " + result.size() + " hits!");
+    return Observable.just(result);
+  }
+
+  private class SearchResultAdapter extends RecyclerView.Adapter<SearchResultViewHolder> {
+    private List<String> mResult;
+
+    @Override
+    public SearchResultViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+      View viewItem = View.inflate(InstantSearchDemo.this,
+          android.R.layout.simple_list_item_1, null);
+      return new SearchResultViewHolder(viewItem);
     }
 
-    private class SearchResultAdapter extends RecyclerView.Adapter<SearchResultViewHolder> {
-        private List<String> mResult;
-
-        @Override
-        public SearchResultViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View viewItem = View.inflate(InstantSearchDemo.this,
-                    android.R.layout.simple_list_item_1, null);
-            return new SearchResultViewHolder(viewItem);
-        }
-
-        @Override
-        public void onBindViewHolder(SearchResultViewHolder holder, int position) {
-            holder.textView.setText(mResult.get(position));
-        }
-
-        @Override
-        public int getItemCount() {
-            return mResult != null ? mResult.size() : 0;
-        }
-
-        public void setSearchResult(List<String> result) {
-            mResult = result;
-            notifyDataSetChanged();
-        }
+    @Override
+    public void onBindViewHolder(SearchResultViewHolder holder, int position) {
+      holder.textView.setText(mResult.get(position));
     }
 
-    private class SearchResultViewHolder extends RecyclerView.ViewHolder {
-        public final TextView textView;
-
-        public SearchResultViewHolder(View itemView) {
-            super(itemView);
-            textView = (TextView) itemView.findViewById(android.R.id.text1);
-        }
+    @Override
+    public int getItemCount() {
+      return mResult != null ? mResult.size() : 0;
     }
+
+    public void setSearchResult(List<String> result) {
+      mResult = result;
+      notifyDataSetChanged();
+    }
+  }
+
+  private class SearchResultViewHolder extends RecyclerView.ViewHolder {
+    public final TextView textView;
+
+    public SearchResultViewHolder(View itemView) {
+      super(itemView);
+      textView = (TextView) itemView.findViewById(android.R.id.text1);
+    }
+  }
 }

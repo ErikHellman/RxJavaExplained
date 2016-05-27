@@ -33,17 +33,16 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 public class InstantSearchDemo extends AppCompatActivity {
   private static final String TAG = "InstantSearchDemo";
   private static final int MIN_LENGTH = 3;
-  @Bind(R.id.search_input)
-  EditText searchInput;
-  @Bind(R.id.search_result)
-  RecyclerView searchResult;
+  private EditText searchInput;
+  private RecyclerView searchResult;
   private Subscription searchSubscription;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.instant_search_demo);
-    ButterKnife.bind(this);
+    searchInput = (EditText) findViewById(R.id.search_input);
+    searchResult = (RecyclerView) findViewById(R.id.search_result);
 
     SearchResultAdapter adapter = new SearchResultAdapter();
     searchResult.setLayoutManager(new LinearLayoutManager(this));
@@ -61,19 +60,16 @@ public class InstantSearchDemo extends AppCompatActivity {
             return true;
           }
         })
-        // The things above should be done on the main thread
-        .subscribeOn(AndroidSchedulers.mainThread())
+        // Perform search on computation scheduler
+        .observeOn(Schedulers.computation())
         // If we get multiple events within 200ms, just emit the last one
         .debounce(200, MILLISECONDS)
         // "Convert" the query string to a search result
         .switchMap(this::searchNames)
-        // The search should happen on the IO thread
-        .subscribeOn(Schedulers.io())
         // Switch back to the main thread
         .observeOn(AndroidSchedulers.mainThread())
         // Set the result on our adapter
         .subscribe(adapter::setSearchResult);
-
   }
 
   @Override

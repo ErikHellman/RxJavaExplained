@@ -24,14 +24,14 @@ public class KittenProvider extends ContentProvider {
   private static final String TAG = "KittenProvider";
   private static final String DB_NAME = "kittens.db";
   private static final int DB_VERSION = 1;
-  private KittenSqlOpenHelper mOpenHelper;
+  private KittenSqlOpenHelper sqlOpenHelper;
 
   public KittenProvider() {
   }
 
   @Override
   public boolean onCreate() {
-    mOpenHelper = new KittenSqlOpenHelper(getContext());
+    sqlOpenHelper = new KittenSqlOpenHelper(getContext());
     return false;
   }
 
@@ -46,7 +46,7 @@ public class KittenProvider extends ContentProvider {
                       String[] selectionArgs, String sortOrder) {
     SQLiteDatabase readableDatabase = null;
     try {
-      readableDatabase = mOpenHelper.getReadableDatabase();
+      readableDatabase = sqlOpenHelper.getReadableDatabase();
       Cursor cursor = readableDatabase.query("kitten", projection, selection, selectionArgs, null, null, sortOrder);
       cursor.setNotificationUri(getContext().getContentResolver(), uri);
       return cursor;
@@ -61,7 +61,7 @@ public class KittenProvider extends ContentProvider {
   public Uri insert(Uri uri, ContentValues values) {
     SQLiteDatabase database = null;
     try {
-      database = mOpenHelper.getWritableDatabase();
+      database = sqlOpenHelper.getWritableDatabase();
       Uri newKitten = Uri.withAppendedPath(uri, Long.toString(database.insert("kitten", "", values)));
       getContext().getContentResolver().notifyChange(uri, null);
       return newKitten;

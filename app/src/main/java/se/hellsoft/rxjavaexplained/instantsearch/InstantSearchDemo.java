@@ -50,16 +50,6 @@ public class InstantSearchDemo extends AppCompatActivity {
     searchSubscription = RxTextView.afterTextChangeEvents(searchInput)
         // Convert the event to a String
         .map(textChangeEvent -> textChangeEvent.editable().toString())
-        // Filter out queries shorter than 3 characters and clear result in that case.
-        .filter(searchString -> {
-          Log.d(TAG, "Filtering on " + Thread.currentThread().getName());
-          if (searchString.length() < MIN_LENGTH) {
-            adapter.setSearchResult(Collections.emptyList());
-            return false;
-          } else {
-            return true;
-          }
-        })
         // Perform search on computation scheduler
         .observeOn(Schedulers.computation())
         // If we get multiple events within 200ms, just emit the last one
@@ -83,19 +73,16 @@ public class InstantSearchDemo extends AppCompatActivity {
   private Observable<List<String>> searchNames(String query) {
     Log.d(TAG, "searchNames: Search for " + query);
     Log.d(TAG, "Searching on " + Thread.currentThread().getName());
-    if (query == null || query.length() == 0) {
-      return Observable.just(new LinkedList<>());
+    if (query == null || query.length() < MIN_LENGTH) {
+      return Observable.just(Collections.emptyList());
     }
-    BufferedReader reader = null;
-    LinkedList<String> result;
-    try {
-      InputStream inputStream = getResources()
-          .openRawResource(R.raw.unique_random_strings);
-      InputStreamReader inputStreamReader
-          = new InputStreamReader(inputStream);
-      reader = new BufferedReader(inputStreamReader);
+
+    LinkedList<String> result = new LinkedList<>();
+    try (InputStream inputStream = getResources()
+        .openRawResource(R.raw.unique_random_strings)) {
+      InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+      BufferedReader reader = new BufferedReader(inputStreamReader);
       String line;
-      result = new LinkedList<>();
       while ((line = reader.readLine()) != null) {
         if (line.toLowerCase().contains(query.toLowerCase())) {
           result.add(line);
@@ -103,15 +90,8 @@ public class InstantSearchDemo extends AppCompatActivity {
       }
     } catch (IOException e) {
       return Observable.error(e);
-    } finally {
-      if (reader != null) {
-        try {
-          reader.close();
-        } catch (IOException e) {
-          // Ignore
-        }
-      }
     }
+
     Collections.sort(result);
     Log.d(TAG, "searchNames: Found " + result.size() + " hits!");
     return Observable.just(result);

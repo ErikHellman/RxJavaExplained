@@ -4,9 +4,11 @@ import android.database.Cursor;
 
 public class Kitten {
   public static final String[] CAT_NAMES = new String[]{
-      "Triibu", "Whiskers", "Tigger", "Shadow", "Smokey", "Oreo", "Kitty", "Jasper", "Coco", "Pepper", "Lucy", "Kiki",
-      "Mittens", "Angel", "Gizmo", "Patches", "Peanut", "Molly", "Batman", "Scooter", "Precious", "Lola", "Ziggy",
-      "Ginger", "Panda", "Zeus", "Minnie", "Marley", "Blue", "Zoe"
+      "Triibu", "Whiskers", "Tigger", "Shadow", "Smokey", "Oreo",
+      "Kitty", "Jasper", "Coco", "Pepper", "Lucy", "Kiki", "Mittens",
+      "Angel", "Gizmo", "Patches", "Peanut", "Molly", "Batman",
+      "Scooter", "Precious", "Lola", "Ziggy", "Ginger", "Panda",
+      "Zeus", "Minnie", "Marley", "Blue", "Zoe"
   };
   public static final String COLUMN_ID = "_id";
   public static final String COLUMN_NAME = "name";
@@ -17,6 +19,15 @@ public class Kitten {
   public long id;
   public String name;
   public String description;
+
+  public Kitten(long id, String name, String description) {
+    this.description = description;
+    this.id = id;
+    this.name = name;
+  }
+
+  public Kitten() {
+  }
 
   public static Kitten cursorToKitten(Cursor cursor) {
     if (cursor == null) return null;
